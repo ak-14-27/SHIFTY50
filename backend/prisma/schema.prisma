@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  fullName     String
+  kycStatus    String      @default("REGISTERED") // REGISTERED | VERIFICATION_PENDING | VERIFIED | ACTIVE
+  panMock      String?
+  aadhaarMock  String?
+  role         String      @default("USER") // USER | ADMIN
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  wallet          Wallet?
+  auditLogs       AuditLog[]
+  orders          Order[]
+  holdings        Holding[]
+  payments        PaymentTransaction[]
+  mfHoldings      MutualFundHolding[]
+  sips            Sip[]
+  mfTransactions  MutualFundTransaction[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id               String         @id @default(uuid())
+  userId           String         @unique
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availableBalance Float          @default(0.0)
+  reservedBalance  Float          @default(0.0)
+  investedBalance  Float          @default(0.0)
+  currency         String         @default("INR")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  ledgerEntries    WalletLedger[]
+
+  @@map("wallets")
+}
+
+model WalletLedger {
+  id              String          @id @default(uuid())
+  walletId        String
+  wallet          Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transactionType String          // MONTHLY_CREDIT | FUNDS_ADDED | ORDER_HOLD | ORDER_RELEASE | TRADE_DEBIT | TRADE_CREDIT | SIP_DEDUCTION | MUTUAL_FUND_INVEST | MUTUAL_FUND_REDEEM | ADMIN_ADJUSTMENT
+  amount          Float
+  balanceBefore   Float
+  balanceAfter    Float
+  referenceId     String?
+  description     String
+  createdAt       DateTime        @default(now())
+
+  @@index([walletId])
+  @@index([createdAt])
+  @@map("wallet_ledgers")
+}
+
+model Stock {
+  id            String   @id @default(uuid())
+  symbol        String   @unique
+  name          String
+  sector        String
+  currentPrice  Float
+  openPrice     Float
+  highPrice     Float
+  lowPrice      Float
+  previousClose Float
+  volume        Int      @default(0)
+  changePercent Float    @default(0.0)
+  updatedAt     DateTime @updatedAt
+
+  orders        Order[]
+  holdings      Holding[]
+
+  @@map("stocks")
+}
+
+model Order {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol            String
+  stock             Stock    @relation(fields: [symbol], references: [symbol], onDelete: Cascade)
+  side              String   // BUY | SELL
+  orderType         String   // MARKET | LIMIT | STOP_LOSS
+  status            String   @default("OPEN") // PLACED | OPEN | PARTIALLY_FILLED | FILLED | CANCELLED | REJECTED
+  price             Float    // Specified price for LIMIT, trigger for STOP_LOSS, execution estimate for MARKET
+  quantity          Int
+  filledQuantity    Int      @default(0)
+  remainingQuantity Int
+  totalAmount       Float    // price * quantity
+  reservedAmount    Float    @default(0.0) // Cash locked for BUY orders
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  buyTrades         Trade[]  @relation("BuyerOrder")
+  sellTrades        Trade[]  @relation("SellerOrder")
+
+  @@index([userId])
+  @@index([symbol, status])
+  @@index([status, side, price, createdAt])
+  @@map("orders")
+}
+
+model Trade {
+  id             String   @id @default(uuid())
+  symbol         String
+  executionPrice Float
+  quantity       Int
+  tradeAmount    Float    // executionPrice * quantity
+  buyerFee       Float    @default(0.0)
+  sellerFee      Float    @default(0.0)
+  executedAt     DateTime @default(now())
+
+  buyerOrderId   String
+  buyerOrder     Order    @relation("BuyerOrder", fields: [buyerOrderId], references: [id], onDelete: Cascade)
+  sellerOrderId  String
+  sellerOrder    Order    @relation("SellerOrder", fields: [sellerOrderId], references: [id], onDelete: Cascade)
+
+  buyerId        String
+  sellerId       String
+
+  @@index([symbol])
+  @@index([executedAt])
+  @@map("trades")
+}
+
+model Holding {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol           String
+  stock            Stock    @relation(fields: [symbol], references: [symbol], onDelete: Cascade)
+  quantity         Int      @default(0)
+  averageBuyPrice  Float    @default(0.0)
+  totalInvested    Float    @default(0.0) // quantity * averageBuyPrice
+  realizedProfit   Float    @default(0.0) // Accumulated realized P&L on sold positions
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, symbol])
+  @@map("holdings")
+}
+
+model PaymentTransaction {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idempotencyKey String   @unique
+  amount         Float
+  paymentMethod  String   // UPI | CARD | NET_BANKING | VIRTUAL_TOPUP
+  status         String   @default("SUCCESS") // PENDING | SUCCESS | FAILED | REJECTED
+  receiptId      String   @unique
+  metadata       String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([idempotencyKey])
+  @@map("payment_transactions")
+}
+
+model MutualFund {
+  id           String   @id @default(uuid())
+  name         String
+  code         String   @unique
+  category     String   // EQUITY | DEBT | HYBRID | INDEX
+  nav          Float
+  cagr3y       Float
+  cagr5y       Float
+  expenseRatio Float
+  risk         String   // LOW | MODERATE | HIGH | VERY_HIGH
+  description  String
+  updatedAt    DateTime @updatedAt
+
+  holdings     MutualFundHolding[]
+  sips         Sip[]
+  transactions MutualFundTransaction[]
+
+  @@map("mutual_funds")
+}
+
+model MutualFundHolding {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fundId        String
+  fund          MutualFund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  units         Float      @default(0.0)
+  averageNav    Float      @default(0.0)
+  totalInvested Float      @default(0.0)
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([userId, fundId])
+  @@map("mutual_fund_holdings")
+}
+
+model Sip {
+  id                     String     @id @default(uuid())
+  userId                 String
+  user                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fundId                 String
+  fund                   MutualFund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  amount                 Float
+  frequency              String     // DAILY | WEEKLY | MONTHLY
+  status                 String     @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
+  startDate              DateTime   @default(now())
+  nextExecutionDate      DateTime
+  totalInstallments      Int        @default(0)
+  successfulInstallments Int        @default(0)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  transactions           MutualFundTransaction[]
+
+  @@index([userId])
+  @@index([status, nextExecutionDate])
+  @@map("sips")
+}
+
+model MutualFundTransaction {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fundId          String
+  fund            MutualFund  @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  sipId           String?
+  sip             Sip?        @relation(fields: [sipId], references: [id], onDelete: SetNull)
+  transactionType String      // LUMPSUM_INVEST | SIP_INSTALLMENT | REDEMPTION
+  amount          Float
+  nav             Float
+  units           Float
+  referenceId     String      @unique
+  status          String      @default("SUCCESS")
+  createdAt       DateTime    @default(now())
+
+  @@index([userId])
+  @@index([fundId])
+  @@map("mutual_fund_transactions")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        String   // ORDER_MATCH | SIP_EXECUTION | PAYMENT_CREDIT | KYC_UPDATE | SYSTEM_ALERT
+  isRead      Boolean  @default(false)
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityName String
+  entityId   String?
+  metadata   String?  // JSON stringified payload
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}

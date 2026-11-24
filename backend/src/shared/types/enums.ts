@@ -1,0 +1,78 @@
+export enum KycStatus {
+  REGISTERED = 'REGISTERED',
+  VERIFICATION_PENDING = 'VERIFICATION_PENDING',
+  VERIFIED = 'VERIFIED',
+  ACTIVE = 'ACTIVE',
+}
+
+export enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+}
+
+export enum TransactionType {
+  MONTHLY_CREDIT = 'MONTHLY_CREDIT',
+  FUNDS_ADDED = 'FUNDS_ADDED',
+  ORDER_HOLD = 'ORDER_HOLD',
+  ORDER_RELEASE = 'ORDER_RELEASE',
+  TRADE_DEBIT = 'TRADE_DEBIT',
+  TRADE_CREDIT = 'TRADE_CREDIT',
+  SIP_DEDUCTION = 'SIP_DEDUCTION',
+  MUTUAL_FUND_INVEST = 'MUTUAL_FUND_INVEST',
+  MUTUAL_FUND_REDEEM = 'MUTUAL_FUND_REDEEM',
+  ADMIN_ADJUSTMENT = 'ADMIN_ADJUSTMENT',
+}
+
+export enum OrderSide {
+  BUY = 'BUY',
+  SELL = 'SELL',
+}
+
+export enum OrderType {
+  MARKET = 'MARKET',
+  LIMIT = 'LIMIT',
+  STOP_LOSS = 'STOP_LOSS',
+}
+
+export enum OrderStatus {
+  PLACED = 'PLACED',
+  OPEN = 'OPEN',
+  PARTIALLY_FILLED = 'PARTIALLY_FILLED',
+  FILLED = 'FILLED',
+  CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  REJECTED = 'REJECTED',
+}
+
+export enum MutualFundCategory {
+  EQUITY = 'EQUITY',
+  DEBT = 'DEBT',
+  HYBRID = 'HYBRID',
+  INDEX = 'INDEX',
+}
+
+export enum SipFrequency {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+}
+
+export enum SipStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum NotificationType {
+  ORDER_MATCH = 'ORDER_MATCH',
+  SIP_EXECUTION = 'SIP_EXECUTION',
+  PAYMENT_CREDIT = 'PAYMENT_CREDIT',
+  KYC_UPDATE = 'KYC_UPDATE',
+  SYSTEM_ALERT = 'SYSTEM_ALERT',
+}

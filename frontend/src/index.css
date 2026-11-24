@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #080C14;
+  color: #F8FAFC;
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+}
+
+/* FinTech Custom Component Classes */
+@layer components {
+  .fintech-card {
+    @apply bg-[#0F172A] border border-[#1E293B] rounded-2xl shadow-card transition-all duration-200;
+  }
+  
+  .fintech-card-interactive {
+    @apply bg-[#0F172A] border border-[#1E293B] rounded-2xl shadow-card hover:border-[#334155] hover:bg-[#131D31] transition-all duration-200;
+  }
+
+  .fintech-glass {
+    @apply bg-[#0F172A]/80 backdrop-blur-md border border-[#1E293B]/80;
+  }
+
+  .fintech-pill-buy {
+    @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold;
+  }
+
+  .fintech-pill-sell {
+    @apply bg-rose-500/10 text-rose-400 border border-rose-500/20 font-semibold;
+  }
+
+  .mono-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #080C14;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Order Book Depth Bar Transition */
+.depth-bar-bid {
+  background: linear-gradient(90deg, transparent, rgba(0, 208, 156, 0.15));
+}
+.depth-bar-ask {
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15));
+}
